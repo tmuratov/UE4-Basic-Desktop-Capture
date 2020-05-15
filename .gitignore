@@ -1,0 +1,6 @@
+.vs*
+Binaries/
+Intermediate/
+Saved/
+x64*
+x86*
