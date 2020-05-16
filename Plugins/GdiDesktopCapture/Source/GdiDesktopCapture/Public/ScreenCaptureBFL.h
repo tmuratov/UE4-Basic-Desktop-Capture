@@ -25,5 +25,3 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
 		static void UpdateTextureAsync();
 };
-
-

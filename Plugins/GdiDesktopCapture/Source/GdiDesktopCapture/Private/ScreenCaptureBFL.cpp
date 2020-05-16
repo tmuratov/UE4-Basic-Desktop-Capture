@@ -23,4 +23,3 @@ void UScreenCaptureBFL::UpdateTextureAsync() {
 	FGdiDesktopCaptureModule::Get().CaptureScreen();
 	FGdiDesktopCaptureModule::Get().UpdateTextureAsync();
 }
-

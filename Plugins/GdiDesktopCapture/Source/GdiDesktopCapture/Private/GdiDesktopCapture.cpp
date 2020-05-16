@@ -62,7 +62,6 @@ void FGdiDesktopCaptureModule::ShutdownModule()
 	mUpdateTextureRegion = nullptr;
 }
 
-
 bool FGdiDesktopCaptureModule::InitHandler() {
 	return ScreenCapture::InitHandler();
 }
@@ -97,6 +96,13 @@ void FGdiDesktopCaptureModule::InitCapture(uint8 numThreads) {
 
 	InitThreads(numThreads);
 
+	if (capThread) {
+		delete capThread;
+		capThread = nullptr;
+	}
+	capThread = new FCaptureThread();
+	capThread->Init();
+	//capThread->Run();
 }
 
 // assign image region to each thread;
@@ -123,6 +129,7 @@ void FGdiDesktopCaptureModule::InitThreads(uint8 numThreads) {
 		threads[i]->Init();
 		offY += h / numThreads;
 	}
+
 }
 
 void FGdiDesktopCaptureModule::CaptureScreen() {

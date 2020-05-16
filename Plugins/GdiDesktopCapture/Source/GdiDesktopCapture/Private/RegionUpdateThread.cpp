@@ -7,7 +7,7 @@
 
 FCaptureThread::FCaptureThread()
 {
-	Stopping = false;
+	Stopping = true;
 	DataUpdateThread = FRunnableThread::Create(this, TEXT("DataCap"), 128 * 1024, TPri_Normal, 0);
 }
 
@@ -25,12 +25,16 @@ bool FCaptureThread::Init() {
 	if (!DataUpdateThread) return false;
 	else return true;
 }
-
 uint32 FCaptureThread::Run() {
 	//return if not finished previous task
+	ScreenCapture::FInputFrameDescription frame;
+	frame.FrameBuffer = nullptr;
+	Stopping = false;
 	while (!Stopping) {
-		FGdiDesktopCaptureModule::Get().CaptureScreen();
-		GEngine->AddOnScreenDebugMessage(-1, 0.3, FColor::Yellow, "run iter");
+		if (ScreenCapture::GetDesktopScreenshot(frame) == false)
+			 GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, "Not Captured");
+		else FMemory::Memcpy(FGdiDesktopCaptureModule::Get().mDisplayData.GetData(), frame.FrameBuffer, 1920*1080*4);
+		//GEngine->AddOnScreenDebugMessage(-1, 0.3, FColor::Yellow, "run iter");
 		FPlatformProcess::Sleep(1 / 30);
 	}
 	Stop();
@@ -39,7 +43,6 @@ uint32 FCaptureThread::Run() {
 void FCaptureThread::Stop() {
 	Stopping = true;
 }
-
 void FCaptureThread::Exit() {
 
 }
