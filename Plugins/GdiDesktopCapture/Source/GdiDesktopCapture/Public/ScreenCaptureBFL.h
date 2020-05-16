@@ -9,6 +9,7 @@
 /**
  * 
  */
+
 UCLASS(Blueprintable)
 class GDIDESKTOPCAPTURE_API UScreenCaptureBFL : public UBlueprintFunctionLibrary
 {
@@ -16,11 +17,13 @@ class GDIDESKTOPCAPTURE_API UScreenCaptureBFL : public UBlueprintFunctionLibrary
 private:
 	//UFUNCTION()
 		//static bool UpdateTexture();
-
 public:
 	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
 		static UTexture2D* GetTexture();
 	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
-		static UTexture2D* InitScreenCapture();
-
+		static UTexture2D* InitScreenCapture(uint8 numThreads = 1);
+	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
+		static UTexture2D* UpdateTextureAsync();
 };
+
+

@@ -2,8 +2,8 @@
 
 #include "GdiDesktopCapture.h"
 #include "Interfaces/IPluginManager.h"
-#include "ScreenCaptureDLL/ScreenCaptureDLL/ScreenCapture.h"
 #include "ImageUtils.h"
+#include "RegionUpdateThread.h"
 
 #define LOCTEXT_NAMESPACE "FGdiDesktopCaptureModule"
 
@@ -52,6 +52,14 @@ void FGdiDesktopCaptureModule::ShutdownModule()
 		FPlatformProcess::FreeDllHandle(LibHandle);
 		LibHandle = NULL;
 	}
+	frame.Dispose();
+	for (auto ptr : threads) {
+		delete ptr;
+		ptr = nullptr;
+	}
+	threads.Empty();	
+	mDynamicTexture = nullptr;
+	mUpdateTextureRegion = nullptr;
 }
 
 
@@ -63,40 +71,69 @@ bool FGdiDesktopCaptureModule::Dispose() {
 	return ScreenCapture::DisposeHandler();
 }
 
-void FGdiDesktopCaptureModule::InitCapture() {
+void FGdiDesktopCaptureModule::InitCapture(uint8 numThreads) {
 	if (mUpdateTextureRegion) delete mUpdateTextureRegion;
-	mDynamicColors.Empty();
+	
+	frame = ScreenCapture::FInputFrameDescription();
 
-	ScreenCapture::FInputFrameDescription frame;
 	if (ScreenCapture::GetDesktopScreenshot(frame) == false) return;
 
 	w = frame.FrameWidth;
 	h = frame.FrameHeight;
 
 	mDynamicTexture = UTexture2D::CreateTransient(w, h, EPixelFormat::PF_B8G8R8A8);
-	mDynamicTexture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+	mDynamicTexture->CompressionSettings = TextureCompressionSettings::TC_HDR;
 	mDynamicTexture->SRGB = 0;
 	mDynamicTexture->AddToRoot();
 	mDynamicTexture->UpdateResource();
 
 	mDataSize = w * h * 4;
-	mArraySize = w * h;
-	mDynamicColors = TArray<uint8>(frame.FrameBuffer, mDataSize);
+	mPixelCount = w * h;
+	
 	mUpdateTextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, w, h);
 
-	frame.Dispose();
+	InitThreads(numThreads);
+
+}
+
+// assign image region to each thread;
+// image region is horizontal slice of size (w, h/numThreads)
+void FGdiDesktopCaptureModule::InitThreads(uint8 numThreads) {
+	//possible re-init with another numThreads
+	if (threads.Num() > 0) {
+		for (auto thread : threads){
+			thread->Stop();
+			thread->Exit();
+			delete thread;
+			thread = nullptr;
+		}
+		threads.Empty();
+	}
+	int offY=0;
+	for (int i = 0; i < numThreads; i++) {
+		threads.Add(new FRegionUpdateThread());
+		threads[i]->region = new FUpdateTextureRegion2D(0, offY, 0, offY, w, h / numThreads);
+		threads[i]->target = mDynamicTexture;
+		threads[i]->data = frame.FrameBuffer;
+		threads[i]->pitch = mDataSize / h;
+		threads[i]->bpp = 4;
+		threads[i]->Init();
+		offY += h / numThreads;
+	}
 }
 
 void FGdiDesktopCaptureModule::CaptureScreen() {
-	ScreenCapture::FInputFrameDescription frame;
 	if (ScreenCapture::GetDesktopScreenshot(frame) == false) return;
-
-	mDynamicColors = TArray<uint8>(frame.FrameBuffer, mDataSize);
-	frame.Dispose();
 }
 
 void FGdiDesktopCaptureModule::UpdateTexture() {
-	mDynamicTexture->UpdateTextureRegions(0, 1, mUpdateTextureRegion, mDataSize / h, 4, mDynamicColors.GetData());
+	if (threads.Num() == 1) UpdateTextureAsync();
+	else mDynamicTexture->UpdateTextureRegions(0, 1, mUpdateTextureRegion, mDataSize / h, 4, frame.FrameBuffer);
+}
+
+void FGdiDesktopCaptureModule::UpdateTextureAsync() {
+	//update each region async
+	for (auto thread : threads) thread->Run();
 }
 
 

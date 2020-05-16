@@ -17,8 +17,10 @@ namespace ScreenCapture {
 		int FrameHeight;
 
 		void Dispose() {
-			if (FrameBuffer != nullptr)
-				delete FrameBuffer;
+			if (FrameBuffer != nullptr) {
+				delete[] FrameBuffer;
+				FrameBuffer = nullptr;
+			}
 		}
 	};
 
