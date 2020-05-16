@@ -10,6 +10,7 @@ private:
 	int cx = 0, cy = 0; //screen resolution
 
 	HANDLE hDIB = NULL;
+	BITMAP bmpScreen;
 
 public:
 	DllHandler() { };

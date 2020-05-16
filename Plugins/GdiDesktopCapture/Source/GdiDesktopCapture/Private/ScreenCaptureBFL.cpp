@@ -9,10 +9,9 @@
 //	texture = FGdiDesktopCaptureModule::Get().CaptureScreen(this);
 //}
 
-UTexture2D* UScreenCaptureBFL::GetTexture() {
+void UScreenCaptureBFL::GetTexture() {
 	FGdiDesktopCaptureModule::Get().CaptureScreen();
 	FGdiDesktopCaptureModule::Get().UpdateTexture();
-	return FGdiDesktopCaptureModule::Get().mDynamicTexture;
 }
 
 UTexture2D* UScreenCaptureBFL::InitScreenCapture(uint8 numThreads) {
@@ -20,9 +19,8 @@ UTexture2D* UScreenCaptureBFL::InitScreenCapture(uint8 numThreads) {
 	return FGdiDesktopCaptureModule::Get().mDynamicTexture;
 }
 
-UTexture2D* UScreenCaptureBFL::UpdateTextureAsync() {
+void UScreenCaptureBFL::UpdateTextureAsync() {
 	FGdiDesktopCaptureModule::Get().CaptureScreen();
 	FGdiDesktopCaptureModule::Get().UpdateTextureAsync();
-	return FGdiDesktopCaptureModule::Get().mDynamicTexture;
 }
 

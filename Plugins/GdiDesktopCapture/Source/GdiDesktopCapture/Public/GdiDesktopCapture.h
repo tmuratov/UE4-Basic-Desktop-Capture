@@ -8,6 +8,7 @@
 #include "ScreenCaptureDLL/ScreenCaptureDLL/ScreenCapture.h"
 
 class FRegionUpdateThread;
+class FCaptureThread;
 
 class FGdiDesktopCaptureModule : public IModuleInterface
 {
@@ -27,6 +28,8 @@ public:
 
 	// frunnables async tex update
 	TArray<FRegionUpdateThread *> threads;
+	FCaptureThread* capThread;
+	TArray<uint8> mDisplayData;
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;

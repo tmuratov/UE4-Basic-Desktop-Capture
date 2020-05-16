@@ -80,7 +80,6 @@ void FGdiDesktopCaptureModule::InitCapture(uint8 numThreads) {
 
 	w = frame.FrameWidth;
 	h = frame.FrameHeight;
-
 	mDynamicTexture = UTexture2D::CreateTransient(w, h, EPixelFormat::PF_B8G8R8A8);
 	mDynamicTexture->CompressionSettings = TextureCompressionSettings::TC_HDR;
 	mDynamicTexture->SRGB = 0;
@@ -89,7 +88,11 @@ void FGdiDesktopCaptureModule::InitCapture(uint8 numThreads) {
 
 	mDataSize = w * h * 4;
 	mPixelCount = w * h;
+	mDisplayData.Reserve(mDataSize);
 	
+	FMemory::Memcpy(mDisplayData.GetData(), frame.FrameBuffer, mDataSize);
+	//mDisplayData = TArray<uint8>(frame.FrameBuffer, mDataSize);
+
 	mUpdateTextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, w, h);
 
 	InitThreads(numThreads);
@@ -114,7 +117,7 @@ void FGdiDesktopCaptureModule::InitThreads(uint8 numThreads) {
 		threads.Add(new FRegionUpdateThread());
 		threads[i]->region = new FUpdateTextureRegion2D(0, offY, 0, offY, w, h / numThreads);
 		threads[i]->target = mDynamicTexture;
-		threads[i]->data = frame.FrameBuffer;
+		threads[i]->data = mDisplayData.GetData();//frame.FrameBuffer;
 		threads[i]->pitch = mDataSize / h;
 		threads[i]->bpp = 4;
 		threads[i]->Init();
@@ -123,12 +126,14 @@ void FGdiDesktopCaptureModule::InitThreads(uint8 numThreads) {
 }
 
 void FGdiDesktopCaptureModule::CaptureScreen() {
-	if (ScreenCapture::GetDesktopScreenshot(frame) == false) return;
+	if (ScreenCapture::GetDesktopScreenshot(frame) == false)
+		GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, "Not Captured");
+	FMemory::Memcpy(mDisplayData.GetData(), frame.FrameBuffer, mDataSize);
 }
 
 void FGdiDesktopCaptureModule::UpdateTexture() {
 	if (threads.Num() == 1) UpdateTextureAsync();
-	else mDynamicTexture->UpdateTextureRegions(0, 1, mUpdateTextureRegion, mDataSize / h, 4, frame.FrameBuffer);
+	else mDynamicTexture->UpdateTextureRegions(0, 1, mUpdateTextureRegion, mDataSize / h, 4, mDisplayData.GetData());
 }
 
 void FGdiDesktopCaptureModule::UpdateTextureAsync() {

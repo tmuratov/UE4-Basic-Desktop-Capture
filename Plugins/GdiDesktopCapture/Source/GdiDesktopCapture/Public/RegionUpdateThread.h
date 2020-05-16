@@ -35,3 +35,26 @@ public:
 	virtual void Exit() override;
 
 };
+
+class FCaptureThread : public FRunnable {
+private:
+
+	// Holds the thread that updates the data
+	FRunnableThread* DataUpdateThread;
+
+	// Holds a flag indicating that the thread is stopping.
+	bool Stopping = false;
+
+public:
+	// bool to check if the data has been updated
+
+	FCaptureThread();
+	~FCaptureThread();
+
+	// FRunnable interface
+	virtual bool Init() override;
+	virtual uint32 Run() override;
+	virtual void Stop() override;
+	virtual void Exit() override;
+
+};

@@ -16,6 +16,8 @@ bool DllHandler::Init() {
 		Dispose();
 		return false;
 	}
+	//Select the compatible bitmap into the compatible memory DC.
+	SelectObject(hdcMemDC, hbmScreen);
 
 	return true;
 }
@@ -27,10 +29,7 @@ bool DllHandler::WriteScreenShotToByteArray(unsigned char*& target, int& width, 
 		return false;
 	}
 
-	//Select the compatible bitmap into the compatible memory DC.
-	SelectObject(hdcMemDC, hbmScreen);
 	// Get the BITMAP from the HBITMAP
-	BITMAP bmpScreen;
 	GetObjectW(hbmScreen, sizeof(BITMAP), &bmpScreen);
 
 	BITMAPINFOHEADER   bi;
@@ -64,14 +63,12 @@ bool DllHandler::WriteScreenShotToByteArray(unsigned char*& target, int& width, 
 		lpbitmap,
 		(BITMAPINFO*)&bi, DIB_RGB_COLORS);
 
-	if (target) delete[] target;
-	//target = new unsigned char [cx * cy * 4l];
-	//memcpy(target, lpbitmap, (cx * cy * 4l));
+	target = new unsigned char[cx * cy * 4l];
+	memcpy(target, lpbitmap, (cx * cy * 4l));
 
 	//Unlock and Free the DIB from the heap
 	GlobalUnlock(hDIB);
 	GlobalFree(hDIB);
-	DeleteObject(hbmScreen);
 
 	return true;
 }

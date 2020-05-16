@@ -19,11 +19,11 @@ private:
 		//static bool UpdateTexture();
 public:
 	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
-		static UTexture2D* GetTexture();
+		static void GetTexture();
 	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
 		static UTexture2D* InitScreenCapture(uint8 numThreads = 1);
 	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
-		static UTexture2D* UpdateTextureAsync();
+		static void UpdateTextureAsync();
 };
 
 
