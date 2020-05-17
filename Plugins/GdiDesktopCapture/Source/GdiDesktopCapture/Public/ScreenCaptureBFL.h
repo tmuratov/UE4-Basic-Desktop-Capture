@@ -15,13 +15,12 @@ class GDIDESKTOPCAPTURE_API UScreenCaptureBFL : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 private:
-	//UFUNCTION()
-		//static bool UpdateTexture();
-public:
-	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
-		static void GetTexture();
-	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
+
+	UFUNCTION(Category = "ScreenCapture")
+		static void UpdateScreenTexture();
+	UFUNCTION(Category = "ScreenCapture")
 		static UTexture2D* InitScreenCapture(uint8 numThreads = 1);
-	UFUNCTION(BlueprintCallable, Category = "ScreenCapture")
+	UFUNCTION(Category = "ScreenCapture")
 		static void UpdateTextureAsync();
 };
+

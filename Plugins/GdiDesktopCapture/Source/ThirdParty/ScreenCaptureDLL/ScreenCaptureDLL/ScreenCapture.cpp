@@ -14,9 +14,9 @@ namespace ScreenCapture {
 		return handler->Init();
 	}
 
-	bool SCREENCAPTUREDLL_API ScreenCapture::GetDesktopScreenshot(FInputFrameDescription& target) {
-		if (target.FrameBuffer) target.Dispose();
-		if (handler) return handler->WriteScreenShotToByteArray(target.FrameBuffer, target.FrameWidth, target.FrameHeight);
+	bool SCREENCAPTUREDLL_API ScreenCapture::GetDesktopScreenshot(FInputFrameDescription& frame) {
+		frame.Dispose();
+		if (handler) return handler->WriteScreenShotToByteArray(frame.FrameBuffer, frame.FrameWidth, frame.FrameHeight);
 		return false;
 	}
 

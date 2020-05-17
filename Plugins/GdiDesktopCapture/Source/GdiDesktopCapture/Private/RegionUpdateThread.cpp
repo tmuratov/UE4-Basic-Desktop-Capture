@@ -2,61 +2,71 @@
 
 #include "RegionUpdateThread.h"
 #include "ImageUtils.h"
-#include "GdiDesktopCapture.h"
 
 
-FCaptureThread::FCaptureThread()
-{
-	Stopping = true;
-	DataUpdateThread = FRunnableThread::Create(this, TEXT("DataCap"), 128 * 1024, TPri_Normal, 0);
-}
 
-FCaptureThread::~FCaptureThread()
-{
-	if (DataUpdateThread != nullptr)
+	FCaptureThread::FCaptureThread()
 	{
-		DataUpdateThread->Kill(true);
-		delete DataUpdateThread;
-		DataUpdateThread = nullptr;
+		Stopping = true;
+		DataUpdateThread = FRunnableThread::Create(this, TEXT("DataCap"), 0, TPri_Normal, 0);
 	}
-}
+	FCaptureThread::FCaptureThread(uint8* targetPtr)
+	{
+		target = targetPtr;
+		frame = ScreenCapture::FInputFrameDescription();
+		//frame.FrameBuffer = target;
 
-bool FCaptureThread::Init() {
-	if (!DataUpdateThread) return false;
-	else return true;
-}
-uint32 FCaptureThread::Run() {
-	//return if not finished previous task
-	ScreenCapture::FInputFrameDescription frame;
-	frame.FrameBuffer = nullptr;
-	Stopping = false;
-	while (!Stopping) {
-		if (ScreenCapture::GetDesktopScreenshot(frame) == false)
-			 GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, "Not Captured");
-		else FMemory::Memcpy(FGdiDesktopCaptureModule::Get().mDisplayData.GetData(), frame.FrameBuffer, 1920*1080*4);
-		//GEngine->AddOnScreenDebugMessage(-1, 0.3, FColor::Yellow, "run iter");
-		FPlatformProcess::Sleep(1 / 30);
+		Stopping = true;
+		DataUpdateThread = FRunnableThread::Create(this, TEXT("DataCap"), 0, TPri_Normal, 0);
 	}
-	Stop();
-	return 0;
-}
-void FCaptureThread::Stop() {
-	Stopping = true;
-}
-void FCaptureThread::Exit() {
+	FCaptureThread::~FCaptureThread()
+	{
+		if (DataUpdateThread != nullptr)
+		{
+			DataUpdateThread->Kill(true);
+			delete DataUpdateThread;
+			DataUpdateThread = nullptr;
+		}
+	}
 
-}
+	bool FCaptureThread::Init() {
+		if (!DataUpdateThread) return false;
+		ScreenCapture::DisposeHandler();
+		ScreenCapture::InitHandler();
+		return true;
+	}
+	uint32 FCaptureThread::Run() {
+
+		Stopping = false;
+		while (!Stopping) {
+			if (!ScreenCapture::GetDesktopScreenshot(frame)) {
+				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "capture failed");
+				Stop();
+			}
+			else FMemory::Memcpy(target, frame.FrameBuffer, frame.FrameHeight * frame.FrameWidth * 4);
+			
+			FPlatformProcess::Sleep(1);
+		}
+		Stop();
+		return 0;
+	}
+	void FCaptureThread::Stop() {
+		Stopping = true;
+	}
+	void FCaptureThread::Exit() {
+
+	}
 
 
+/**Region update thread below**/
 
 
 FRegionUpdateThread::FRegionUpdateThread()
 {
 	Stopping = true;
 	HasDataBeenUpdated = false;
-	DataUpdateThread = FRunnableThread::Create(this, TEXT("DataUpdater"), 128 * 1024, TPri_SlightlyBelowNormal, 0);
+	DataUpdateThread = FRunnableThread::Create(this, *(FString::Printf((L"DataUpdater%d"), id)), 0, TPri_SlightlyBelowNormal, 0);
 }
-
 FRegionUpdateThread::~FRegionUpdateThread()
 {
 	if (DataUpdateThread != nullptr)
@@ -65,7 +75,7 @@ FRegionUpdateThread::~FRegionUpdateThread()
 		delete DataUpdateThread;
 		DataUpdateThread = nullptr;
 	}
-	if (region) delete region;
+	if (region) region = nullptr;
 	if (target) target = nullptr;
 	if (data) data = nullptr;
 }
@@ -73,13 +83,17 @@ FRegionUpdateThread::~FRegionUpdateThread()
 bool FRegionUpdateThread::Init() {
 	return (DataUpdateThread && region && target && data);
 }
-
+void FRegionUpdateThread::LoopIteration() {
+	if (data) target->UpdateTextureRegions(0, 1, region, pitch, bpp, data);
+}
 uint32 FRegionUpdateThread::Run() {
 	//return if not finished previous task
 	if (!Stopping) return 1;
 	Stopping = false;
-	if (data) target->UpdateTextureRegions(0, 1, region, pitch, bpp, data);
-	Stop();
+	while (!Stopping) {
+		LoopIteration();
+		FPlatformProcess::Sleep(0.1);
+	}
 	return 0;
 }
 void FRegionUpdateThread::Stop() {
@@ -93,3 +107,5 @@ void FRegionUpdateThread::Exit() {
 		DataUpdateThread = nullptr;
 	}
 }
+
+

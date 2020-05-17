@@ -63,6 +63,7 @@ bool DllHandler::WriteScreenShotToByteArray(unsigned char*& target, int& width, 
 		lpbitmap,
 		(BITMAPINFO*)&bi, DIB_RGB_COLORS);
 
+	if (target) delete[] target;
 	target = new unsigned char[cx * cy * 4l];
 	memcpy(target, lpbitmap, (cx * cy * 4l));
 
